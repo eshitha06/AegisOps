@@ -2,6 +2,8 @@ from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
+from prometheus_fastapi_instrumentator import Instrumentator
+
 from backend.config import settings
 from backend.db import engine, Base, get_db
 from backend.routers import (
@@ -22,6 +24,10 @@ app = FastAPI(
     description="Autonomous AI-powered Site Reliability Engineering (SRE) platform backend",
     version="1.0.0"
 )
+
+# Instrument the app for Prometheus metric collection
+Instrumentator().instrument(app).expose(app)
+
 
 # CORS configuration to allow all origins during development
 app.add_middleware(
