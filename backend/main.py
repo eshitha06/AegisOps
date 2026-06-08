@@ -13,7 +13,8 @@ from backend.routers import (
     agents,
     predictions,
     recovery,
-    websocket
+    websocket,
+    ai
 )
 
 # Create database tables at startup (for hackathon/demo simplicity)
@@ -46,9 +47,8 @@ app.include_router(agents.router)
 app.include_router(predictions.router)
 app.include_router(recovery.router)
 app.include_router(websocket.router)
+app.include_router(ai.router)
 
 @app.get("/api/health-score", tags=["health"])
-def get_health_score(db: Session = Depends(get_db)):
-    # Phase 1: Return a composite health score placeholder (default to 98/100)
-    # This will be dynamically calculated in Phase 2 based on recent metrics
+def get_health_score():
     return {"health_score": 98.0}
