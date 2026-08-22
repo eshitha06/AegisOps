@@ -24,13 +24,24 @@ async def run_full_pipeline(metric, db):
             )
             
             if not active_incident:
+                initial_snapshot = {
+                    "at": metric.recorded_at.isoformat() + "Z",
+                    "cpu": metric.cpu_usage,
+                    "memory": metric.memory_usage,
+                    "errors_per_second": metric.error_rate,
+                    "latency_ms": metric.latency_ms,
+                    "requests_per_minute": metric.request_count,
+                    "anomaly": True,
+                }
+                import json
                 incident = Incident(
                     title=f"Telemetry anomaly detected on {metric.service} (CPU/Memory distribution check)",
                     service=metric.service,
                     source="real",
                     status="open",
                     severity="high",
-                    created_at=datetime.utcnow()
+                    created_at=datetime.utcnow(),
+                    observed_evidence=json.dumps({"incident_metric": initial_snapshot}),
                 )
                 db.add(incident)
                 db.commit()
@@ -41,8 +52,15 @@ async def run_full_pipeline(metric, db):
         if incident:
             print(f"Processing Incident {incident.id} through RCA and Recovery pipeline...")
             
-            # 4. Run RCA agent
-            rca_res = await rca_agent.run(incident.id, db)
+            # 4. Run RCA agent only if not already analyzed
+            if not incident.rca_result:
+                rca_res = await rca_agent.run(incident.id, db)
+            else:
+                import json
+                try:
+                    rca_res = json.loads(incident.rca_result)
+                except Exception:
+                    rca_res = await rca_agent.run(incident.id, db)
             
             # 5. Run Recovery agent
             recovery_res = recovery_agent.run(rca_res, incident.id, db)

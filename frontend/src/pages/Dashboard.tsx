@@ -25,8 +25,8 @@ import useWebSocket from '../hooks/useWebSocket';
 
 export default function Dashboard() {
   const { healthScore, loading: healthLoading } = useHealthScore();
-  const { incidents, loading: incidentsLoading } = useIncidents();
-  const { metrics: wsMetrics, isConnected } = useWebSocket();
+  const { incidents, loading: incidentsLoading } = useIncidents(undefined, 3000);
+  const { metrics: wsMetrics, connectionStatus } = useWebSocket();
 
   // Accumulate metrics timeline history
   const [history, setHistory] = useState<any[]>([]);
@@ -53,10 +53,10 @@ export default function Dashboard() {
   // Current values
   const currentCpu = wsMetrics.length > 0 
     ? (wsMetrics.reduce((sum, m) => sum + m.cpu_usage, 0) / wsMetrics.length * 100) 
-    : 0;
+    : null;
   const currentMem = wsMetrics.length > 0 
     ? (wsMetrics.reduce((sum, m) => sum + m.memory_usage, 0) / wsMetrics.length * 100) 
-    : 0;
+    : null;
   const activeIncidents = incidents.filter(i => i.status !== 'resolved');
 
   return (
@@ -73,7 +73,16 @@ export default function Dashboard() {
         </div>
         <div className="flex items-center gap-3 bg-brand-dark/50 border border-brand-border/40 backdrop-blur-lg px-4 py-2 rounded-xl text-xs text-slate-300 font-mono">
           <Clock className="w-4 h-4 text-brand-primary animate-pulse" />
-          <span>WebSocket Status: {isConnected ? <span className="text-brand-success">CONNECTED</span> : <span className="text-brand-danger">DISCONNECTED</span>}</span>
+          <span>
+            Telemetry Link:{' '}
+            <strong className={
+              connectionStatus === 'CONNECTED' ? 'text-brand-success' :
+              connectionStatus === 'RECONNECTING' ? 'text-amber-400' :
+              connectionStatus === 'STALE' ? 'text-amber-300' : 'text-brand-danger'
+            }>
+              {connectionStatus}
+            </strong>
+          </span>
         </div>
       </div>
 
@@ -127,7 +136,7 @@ export default function Dashboard() {
             <div className="flex justify-between items-start">
               <div>
                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Avg CPU Usage</p>
-                <h3 className="text-3xl font-bold text-white mt-2 font-mono">{currentCpu.toFixed(1)}%</h3>
+                <h3 className="text-3xl font-bold text-white mt-2 font-mono">{currentCpu === null ? 'NO DATA' : `${currentCpu.toFixed(1)}%`}</h3>
               </div>
               <div className="p-2.5 rounded-lg bg-brand-primary/10 border border-brand-primary/20 text-brand-primary">
                 <Cpu className="w-5 h-5" />
@@ -135,16 +144,16 @@ export default function Dashboard() {
             </div>
             <div className="mt-4 pt-4 border-t border-brand-border/20 flex items-center justify-between text-xs">
               <span className="text-slate-500">Threshold: 90%</span>
-              <span className={`font-medium ${currentCpu > 90 ? 'text-brand-danger' : 'text-brand-success'}`}>{currentCpu > 90 ? 'Degraded' : 'Healthy'}</span>
+              <span className={`font-medium ${currentCpu === null ? 'text-slate-500' : currentCpu > 90 ? 'text-brand-danger' : 'text-brand-success'}`}>{currentCpu === null ? 'Waiting' : currentCpu > 90 ? 'Degraded' : 'Healthy'}</span>
             </div>
           </div>
 
           {/* Card 2: Memory */}
-          <div className="glass-card p-6 flex flex-col justify-between">
+          <div className={`glass-card p-6 flex flex-col justify-between ${activeIncidents.length > 0 ? 'system-critical' : ''}`}>
             <div className="flex justify-between items-start">
               <div>
                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Avg Memory</p>
-                <h3 className="text-3xl font-bold text-white mt-2 font-mono">{currentMem.toFixed(1)}%</h3>
+                <h3 className="text-3xl font-bold text-white mt-2 font-mono">{currentMem === null ? 'NO DATA' : `${currentMem.toFixed(1)}%`}</h3>
               </div>
               <div className="p-2.5 rounded-xl bg-brand-accent/10 border border-brand-accent/20 text-brand-accent">
                 <HardDrive className="w-5 h-5" />
@@ -152,7 +161,7 @@ export default function Dashboard() {
             </div>
             <div className="mt-4 pt-4 border-t border-brand-border/20 flex items-center justify-between text-xs">
               <span className="text-slate-500">Threshold: 90%</span>
-              <span className={`font-medium ${currentMem > 90 ? 'text-brand-danger' : 'text-brand-success'}`}>{currentMem > 90 ? 'Degraded' : 'Healthy'}</span>
+              <span className={`font-medium ${currentMem === null ? 'text-slate-500' : currentMem > 90 ? 'text-brand-danger' : 'text-brand-success'}`}>{currentMem === null ? 'Waiting' : currentMem > 90 ? 'Degraded' : 'Healthy'}</span>
             </div>
           </div>
 
@@ -191,15 +200,15 @@ export default function Dashboard() {
             <p className="text-xs text-slate-400 mt-1">Average cluster CPU utilization %</p>
           </div>
           <div className="h-44 mt-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={history.length > 0 ? history : [{ name: '', cpu: 15 }]}>
+            {history.length > 0 ? <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={history}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#242e47" opacity={0.3} />
                 <XAxis dataKey="name" stroke="#64748b" fontSize={9} tickLine={false} />
                 <YAxis stroke="#64748b" fontSize={9} tickLine={false} domain={[0, 100]} />
                 <Tooltip contentStyle={{ backgroundColor: '#0e1322', borderColor: '#242e47', borderRadius: '8px', color: '#f8fafc', fontSize: 11 }} />
-                <Line type="monotone" dataKey="cpu" stroke="#0ea5e9" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+                <Line type="monotone" dataKey="cpu" stroke="#e33b45" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
               </LineChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer> : <div className="flex h-full items-center justify-center font-mono text-xs text-slate-500">WAITING FOR TELEMETRY</div>}
           </div>
         </div>
 
@@ -213,15 +222,15 @@ export default function Dashboard() {
             <p className="text-xs text-slate-400 mt-1">Average cluster Memory utilization %</p>
           </div>
           <div className="h-44 mt-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={history.length > 0 ? history : [{ name: '', memory: 30 }]}>
+            {history.length > 0 ? <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={history}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#242e47" opacity={0.3} />
                 <XAxis dataKey="name" stroke="#64748b" fontSize={9} tickLine={false} />
                 <YAxis stroke="#64748b" fontSize={9} tickLine={false} domain={[0, 100]} />
                 <Tooltip contentStyle={{ backgroundColor: '#0e1322', borderColor: '#242e47', borderRadius: '8px', color: '#f8fafc', fontSize: 11 }} />
-                <Line type="monotone" dataKey="memory" stroke="#a855f7" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+                <Line type="monotone" dataKey="memory" stroke="#d1d1d6" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
               </LineChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer> : <div className="flex h-full items-center justify-center font-mono text-xs text-slate-500">WAITING FOR TELEMETRY</div>}
           </div>
         </div>
 
@@ -235,15 +244,15 @@ export default function Dashboard() {
             <p className="text-xs text-slate-400 mt-1">Average failures/sec telemetry trend</p>
           </div>
           <div className="h-44 mt-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={history.length > 0 ? history : [{ name: '', errors: 0 }]}>
+            {history.length > 0 ? <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={history}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#242e47" opacity={0.3} />
                 <XAxis dataKey="name" stroke="#64748b" fontSize={9} tickLine={false} />
                 <YAxis stroke="#64748b" fontSize={9} tickLine={false} />
                 <Tooltip contentStyle={{ backgroundColor: '#0e1322', borderColor: '#242e47', borderRadius: '8px', color: '#f8fafc', fontSize: 11 }} />
                 <Line type="monotone" dataKey="errors" stroke="#ef4444" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
               </LineChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer> : <div className="flex h-full items-center justify-center font-mono text-xs text-slate-500">WAITING FOR TELEMETRY</div>}
           </div>
         </div>
       </div>
@@ -260,28 +269,46 @@ export default function Dashboard() {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {activeIncidents.slice(0, 6).map((incident) => (
-              <div 
-                key={incident.id}
-                className="p-4 rounded-xl border border-brand-border/30 bg-brand-darkest/40 flex flex-col justify-between hover:border-brand-primary/20 transition-all duration-200"
-              >
-                <div>
-                  <div className="flex justify-between items-start gap-2">
-                    <span className="text-xs font-mono font-bold text-slate-400">INCIDENT-{incident.id}</span>
-                    <StatusBadge value={incident.severity} />
+            {activeIncidents.slice(0, 6).map((incident) => {
+              const isLiveActive = incident.live_condition === 'ACTIVE';
+              return (
+                <div 
+                  key={incident.id}
+                  className={`p-4 rounded-xl border flex flex-col justify-between transition-all duration-200 ${
+                    isLiveActive 
+                      ? 'border-red-500/40 bg-red-950/20 incident-critical' 
+                      : 'border-brand-border/30 bg-brand-darkest/40 hover:border-brand-primary/20'
+                  }`}
+                >
+                  <div>
+                    <div className="flex justify-between items-start gap-2">
+                      <span className="text-xs font-mono font-bold text-slate-400">INCIDENT-{incident.id}</span>
+                      <div className="flex items-center gap-1.5">
+                        {isLiveActive ? (
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-extrabold bg-red-950 text-red-400 border border-red-500/50">
+                            LIVE ACTIVE
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-emerald-950/50 text-emerald-400 border border-emerald-800/40">
+                            CLEARED
+                          </span>
+                        )}
+                        <StatusBadge value={incident.severity} />
+                      </div>
+                    </div>
+                    <h4 className="text-sm font-bold text-white mt-2 line-clamp-2 leading-relaxed">
+                      {incident.title}
+                    </h4>
                   </div>
-                  <h4 className="text-sm font-bold text-white mt-2 line-clamp-2 leading-relaxed">
-                    {incident.title}
-                  </h4>
+                  <div className="flex justify-between items-center text-[11px] text-slate-400 mt-4 pt-3 border-t border-brand-border/10 font-mono">
+                    <span className="text-brand-primary">{incident.service}</span>
+                    <span>
+                      {new Date(incident.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex justify-between items-center text-[11px] text-slate-500 mt-4 pt-3 border-t border-brand-border/10 font-mono">
-                  <span>{incident.service}</span>
-                  <span>
-                    {new Date(incident.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
             {activeIncidents.length === 0 && (
               <div className="col-span-full py-8 text-center text-slate-500 font-mono text-sm">
                 ✓ System operational. Zero active incidents reported.

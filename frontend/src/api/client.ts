@@ -79,6 +79,26 @@ export const api = {
     const response = await client.post<{ status: string; log: string[] }>(`/recovery/${id}/execute`);
     return response.data;
   },
+
+  // Failure Injection & Recovery Control Plane (Proxies to demo-failure-injector)
+  getFailureState: async (): Promise<Record<string, boolean>> => {
+    const response = await client.get<Record<string, boolean>>('/failures/state');
+    return response.data;
+  },
+
+  triggerFailure: async (kind: 'cpu' | 'memory' | 'latency' | 'errors' | 'database' | 'worker'): Promise<any> => {
+    const response = await client.post(`/failures/${kind}`);
+    return response.data;
+  },
+
+  recoverFailure: async (kind?: string): Promise<any> => {
+    if (kind && kind !== 'all') {
+      const response = await client.post(`/failures/recover/${kind}`);
+      return response.data;
+    }
+    const response = await client.post('/failures/recover');
+    return response.data;
+  },
 };
 
 export default client;

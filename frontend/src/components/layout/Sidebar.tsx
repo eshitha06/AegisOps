@@ -41,7 +41,7 @@ export default function Sidebar() {
             className={({ isActive }) =>
               `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 group ${
                 isActive
-                  ? 'bg-brand-primary/10 text-brand-primary border border-brand-primary/20'
+                  ? 'bg-brand-primary/10 text-brand-primary border border-brand-primary/30 nav-active'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-brand-card/60'
               }`
             }
@@ -54,11 +54,10 @@ export default function Sidebar() {
 
       {/* Footer */}
       <div className="px-6 py-4 border-t border-brand-border/30">
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-brand-success animate-pulse" />
-          <span className="text-xs text-slate-500">System Online</span>
+          <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-slate-500" />
+          <span className="text-xs text-slate-500">Live status on dashboard</span>
         </div>
-        <p className="text-[10px] text-slate-600 mt-1">v1.0.0</p>
       </div>
     </aside>
   );

@@ -5,7 +5,6 @@ import { RecoveryAction } from '../../types';
 interface RecoveryActionCardProps {
   action: RecoveryAction;
   priority: number;
-  confidence: number;
   onApprove: (id: number) => void;
   onExecute: (id: number) => void;
   isExecuting: boolean;
@@ -14,7 +13,6 @@ interface RecoveryActionCardProps {
 export default function RecoveryActionCard({ 
   action, 
   priority, 
-  confidence, 
   onApprove, 
   onExecute, 
   isExecuting 
@@ -66,11 +64,10 @@ export default function RecoveryActionCard({
         {action.description}
       </p>
 
-      {/* Details Row: Confidence */}
+      {/* The action is constrained to the demo-env recovery allowlist. */}
       <div className="mt-4 flex items-center gap-1.5 text-xs text-brand-success bg-brand-success/5 border border-brand-success/10 px-3 py-1.5 rounded-lg w-fit">
         <ShieldCheck className="w-4 h-4 text-brand-success" />
-        <span className="font-semibold">Plan Confidence:</span>
-        <span className="font-mono font-bold text-white">{confidence}%</span>
+        <span className="font-semibold">Safe demo-env allowlist action</span>
       </div>
 
       {/* Card Action Buttons */}
@@ -88,7 +85,7 @@ export default function RecoveryActionCard({
           <button
             disabled={isExecuting}
             onClick={() => onExecute(action.id)}
-            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-brand-darkest bg-brand-primary text-xs font-bold hover:opacity-90 transition-all duration-200 glow-primary ${
+            className={`primary-action flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-brand-darkest bg-brand-primary text-xs font-bold hover:opacity-90 transition-all duration-200 ${
               isExecuting ? 'opacity-50 cursor-not-allowed' : ''
             }`}
           >
@@ -99,7 +96,7 @@ export default function RecoveryActionCard({
         {action.status === 'executed' && (
           <div className="flex items-center gap-1 text-xs text-brand-success font-bold py-1">
             <Check className="w-4 h-4 stroke-[3px]" />
-            Execution Succeeded
+            Recovery verified
           </div>
         )}
       </div>

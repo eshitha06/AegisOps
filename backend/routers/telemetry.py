@@ -1,3 +1,4 @@
+import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import List
@@ -50,6 +51,18 @@ async def manual_collect():
 @router.get("/services")
 async def list_services():
     return {"services": ["api", "worker"], "source": "demo-env Prometheus"}
+
+
+@router.get("/replay-status")
+async def replay_status():
+    """Observed dataset replay state from demo-env; not telemetry input."""
+    try:
+        async with httpx.AsyncClient(timeout=3.0) as client:
+            response = await client.get(f"{settings.DEMO_REPLAY_URL}/api/replay/status")
+            response.raise_for_status()
+            return {"source": "demo-env dataset replay", **response.json()}
+    except Exception as exc:
+        return {"source": "demo-env dataset replay", "status": "unavailable", "error": str(exc)}
 
 
 @router.get("/health/{service}")

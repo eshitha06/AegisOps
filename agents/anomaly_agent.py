@@ -12,7 +12,7 @@ def run(metric, db=None):
         # Fetch up to 100 recent historical metrics for this service to train the Isolation Forest
         historical = (
             db.query(Metric)
-            .filter(Metric.service == metric.service)
+            .filter(Metric.service == metric.service, Metric.source == "real")
             .order_by(Metric.recorded_at.desc())
             .limit(100)
             .all()

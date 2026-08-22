@@ -8,15 +8,15 @@ export default {
     extend: {
       colors: {
         brand: {
-          darkest: '#111827',
-          dark: '#172033',
-          card: '#1f2937',
-          border: '#334155',
-          primary: '#38bdf8',
-          accent: '#94a3b8',
-          success: '#34d399',
-          warning: '#fbbf24',
-          danger: '#fb7185'
+          darkest: '#09090b',
+          dark: '#151518',
+          card: '#1d1d21',
+          border: '#35353c',
+          primary: '#e33b45',
+          accent: '#a1a1aa',
+          success: '#42a56b',
+          warning: '#d59a3a',
+          danger: '#e33b45'
         }
       }
     },

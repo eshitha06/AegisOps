@@ -84,16 +84,18 @@ class PrometheusCollector:
 
         cpu_query = f'{prefix}_cpu_usage_percent'
         mem_query = f'{prefix}_memory_usage_bytes'
-        req_count_query = f'rate({prefix}_requests_total[1m])'
-        error_rate_query = f'rate({prefix}_errors_total[1m])'
-        latency_query = f'histogram_quantile(0.95, sum(rate({prefix}_request_latency_seconds_bucket[5m])) by (le))'
+        # A 30-second observed window matches the five-second scrape cadence
+        # and lets recovery verification reflect a cleared demo fault promptly.
+        req_count_query = f'rate({prefix}_requests_total[30s])'
+        error_rate_query = f'rate({prefix}_errors_total[30s])'
+        latency_query = f'histogram_quantile(0.95, sum(rate({prefix}_request_latency_seconds_bucket[30s])) by (le))'
 
         if service == "worker":
             cpu_query = 'worker_cpu_usage_percent'
             mem_query = 'worker_memory_usage_bytes'
-            req_count_query = 'rate(worker_jobs_processed_total[1m])'
-            error_rate_query = 'rate(worker_jobs_failed_total[1m])'
-            latency_query = 'histogram_quantile(0.95, sum(rate(worker_job_latency_seconds_bucket[5m])) by (le))'
+            req_count_query = 'rate(worker_jobs_processed_total[30s])'
+            error_rate_query = 'rate(worker_jobs_failed_total[30s])'
+            latency_query = 'histogram_quantile(0.95, sum(rate(worker_job_latency_seconds_bucket[30s])) by (le))'
 
         cpu_result = await self.query(cpu_query)
         mem_result = await self.query(mem_query)

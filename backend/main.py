@@ -18,8 +18,9 @@ from backend.routers import (
     predictions,
     recovery,
     websocket,
-    ai
-    , telemetry
+    ai,
+    telemetry,
+    failures,
 )
 
 # Create database tables at startup (for hackathon/demo simplicity)
@@ -77,6 +78,7 @@ app.include_router(recovery.router)
 app.include_router(websocket.router)
 app.include_router(ai.router)
 app.include_router(telemetry.router)
+app.include_router(failures.router)
 
 @app.get("/api/health-score", tags=["health"])
 def get_health_score(db: Session = Depends(get_db)):

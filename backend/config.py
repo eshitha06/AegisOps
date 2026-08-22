@@ -8,12 +8,13 @@ class Settings(BaseSettings):
     FAILURE_INJECTOR_URL: str = "http://demo-failure-injector:8002"
     DEMO_API_URL: str = "http://demo-api:8000"
     DEMO_WORKER_URL: str = "http://demo-worker:8001"
+    DEMO_REPLAY_URL: str = "http://demo-replay:8003"
     # "real" queries the configured Prometheus server.  "demo" deliberately
     # stops the collector; it never substitutes random measurements.
     TELEMETRY_MODE: str = "real"
     DEMO_MODE: bool = False
     ANOMALY_CONTAMINATION: float = 0.05
-    POLL_INTERVAL_SECONDS: int = 30
+    POLL_INTERVAL_SECONDS: int = 5
 
     model_config = SettingsConfigDict(
         env_file=(".env", "../.env"),

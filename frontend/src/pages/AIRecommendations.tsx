@@ -11,6 +11,7 @@ export default function AIRecommendations() {
   const [isExecuting, setIsExecuting] = useState<boolean>(false);
   const [executingId, setExecutingId] = useState<number | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   
   const terminalEndRef = useRef<HTMLDivElement>(null);
 
@@ -18,8 +19,10 @@ export default function AIRecommendations() {
     try {
       const data = await api.getRecoveryActions();
       setActions(data);
+      setError(null);
     } catch (err) {
       console.error('Failed to fetch recovery actions:', err);
+      setError('WAITING FOR LIVE RECOVERY DATA');
     } finally {
       setLoading(false);
     }
@@ -68,13 +71,7 @@ export default function AIRecommendations() {
 
     try {
       const result = await api.executeRecoveryAction(id);
-      const simulationSteps = result.log || [
-        `INITIATING RECOVERY ACTION #${id} - ${action.action_type.toUpperCase()}`,
-        `Connecting to orchestration API...`,
-        `Executing recovery script sequence...`,
-        `Verifying service health checks...`,
-        `RECOVERY COMPLETED SUCCESSFULLY. Incident status marked: RESOLVED.`
-      ];
+      const simulationSteps = result.log || [];
 
       let currentStep = 0;
       const interval = setInterval(() => {
@@ -119,9 +116,15 @@ export default function AIRecommendations() {
           AI Recovery Recommendations
         </h2>
         <p className="text-slate-400 mt-1">
-          Approve and execute AI-generated recovery plans. Review step-by-step action details and real-time execution logs.
+          Operator-controlled actions for active REAL incidents. Evidence, historical matches, Gemini analysis, and verification are shown only when recorded.
         </p>
       </div>
+
+      {error && (
+        <div className="border border-brand-danger/40 bg-brand-danger/10 p-3 font-mono text-xs text-brand-danger">
+          {error}. This page retries automatically.
+        </div>
+      )}
 
       {/* Grid: Actions List & Terminal Log */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
@@ -133,15 +136,16 @@ export default function AIRecommendations() {
 
           <div className="space-y-4">
             {actions.map((action, index) => (
-              <RecoveryActionCard
-                key={action.id}
-                action={action}
-                priority={index + 1}
-                confidence={92 + (action.id % 8)}
-                onApprove={handleApprove}
-                onExecute={handleExecute}
-                isExecuting={isExecuting && executingId === action.id}
-              />
+              <div key={action.id} className="space-y-0 border border-brand-border bg-brand-dark">
+                <RecoveryActionCard action={action} priority={index + 1} onApprove={handleApprove} onExecute={handleExecute} isExecuting={isExecuting && executingId === action.id} />
+                {(() => {
+                  let evidence: any = null; let rca: any = null; let verification: any = null;
+                  try { evidence = action.observed_evidence ? JSON.parse(action.observed_evidence) : null; } catch {}
+                  try { rca = action.rca_result ? JSON.parse(action.rca_result) : null; } catch {}
+                  try { verification = action.verification_result ? JSON.parse(action.verification_result) : null; } catch {}
+                  return <div className="border-t border-brand-border bg-brand-darkest p-4 text-xs"><p className="section-label">Incident evidence</p><p className="mt-1 font-mono text-slate-300">#{action.incident_id} · {action.incident_service || 'NO DATA'} · {action.incident_title || 'NO DATA'}</p><p className="mt-2 text-slate-400">Gemini: {rca?.gemini?.status || 'NOT RUN'} · Historical matches: {evidence?.similar_resolved_incidents?.length ?? 0}</p><p className="mt-1 text-slate-400">Recommended: {rca?.ai_conclusion?.recommended_action || action.description}</p><p className="mt-1 text-slate-400">Execution: {action.status.toUpperCase()} · Verification: {verification ? (verification.healthy ? 'VERIFIED' : 'FAILED') : 'PENDING'}</p></div>;
+                })()}
+              </div>
             ))}
             {actions.length === 0 && (
               <p className="text-slate-500 text-sm font-mono py-4">No recommended actions generated.</p>

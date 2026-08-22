@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import client from '../api/client';
 
-type TelemetryMode = 'real' | 'demo';
+export type TelemetryMode = 'real' | 'demo';
 
 interface TelemetryModeContextType {
   mode: TelemetryMode;
@@ -34,7 +34,10 @@ export function TelemetryModeProvider({ children }: { children: ReactNode }) {
 export function useTelemetryMode() {
   const context = useContext(TelemetryModeContext);
   if (!context) {
-    throw new Error('useTelemetryMode must be used within a TelemetryModeProvider');
+    return {
+      mode: 'real' as const,
+      setMode: () => {},
+    };
   }
   return context;
 }

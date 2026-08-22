@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { api } from '../api/client';
 import { Incident } from '../types';
 
-export default function useIncidents(status?: string, pollIntervalMs: number = 5000) {
+export default function useIncidents(status?: string, pollIntervalMs: number = 3000) {
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
@@ -10,7 +10,7 @@ export default function useIncidents(status?: string, pollIntervalMs: number = 5
   const fetchIncidents = async () => {
     try {
       const data = await api.getIncidents(status);
-      setIncidents(data);
+      setIncidents(Array.isArray(data) ? data : []);
       setError(null);
     } catch (err: any) {
       setError(err);

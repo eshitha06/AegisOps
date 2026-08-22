@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from backend.db import get_db
 from backend.models.metric import Metric
+from backend.config import settings
 from backend.schemas.metric import MetricIn, MetricOut
 
 router = APIRouter(prefix="/api/metrics", tags=["metrics"])
@@ -43,7 +44,7 @@ def get_service_metrics(service: str, db: Session = Depends(get_db)):
     # Returns last 50 metrics for the specified service
     metrics = (
         db.query(Metric)
-        .filter(Metric.service == service)
+        .filter(Metric.service == service, Metric.source == settings.TELEMETRY_MODE)
         .order_by(Metric.recorded_at.desc())
         .limit(50)
         .all()

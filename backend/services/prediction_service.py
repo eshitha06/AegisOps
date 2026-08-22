@@ -5,14 +5,21 @@ from backend.models.metric import Metric
 class PredictionService:
     def predict_status(self, service: str, db: Session):
         # Retrieve recent metrics
-        metrics = db.query(Metric).filter(Metric.service == service).order_by(Metric.recorded_at.desc()).limit(20).all()
-        if not metrics:
+        metrics = (db.query(Metric).filter(Metric.service == service, Metric.source == "real")
+                   .order_by(Metric.recorded_at.desc()).limit(20).all())
+        if len(metrics) < 5:
             return {
                 "service": service,
-                "risk_score": 0.0,
+                "risk_score": None,
                 "estimated_time_to_failure_minutes": None,
-                "status": "healthy",
-                "trend_direction": "stable"
+                "status": "insufficient_data",
+                "trend_direction": "unknown",
+                "metric": "latency_ms",
+                "current_value": None,
+                "data_points": len(metrics),
+                "data_window_start": metrics[-1].recorded_at.isoformat() + "Z" if metrics else None,
+                "data_window_end": metrics[0].recorded_at.isoformat() + "Z" if metrics else None,
+                "confidence": None,
             }
         
         # Calculate averages and trend lines
@@ -56,12 +63,20 @@ class PredictionService:
         if trend == "degrading":
             etf = max(5, int((1500 - avg_latency) / (latency_slope + 0.1)))
             
+        # Confidence is a transparent data-quality signal, not an accuracy
+        # claim: it is based solely on sample count in the observed window.
         return {
             "service": service,
             "risk_score": float(risk_score),
             "estimated_time_to_failure_minutes": etf,
             "status": status,
-            "trend_direction": trend
+            "trend_direction": trend,
+            "metric": "latency_ms",
+            "current_value": latencies[-1],
+            "data_points": len(metrics),
+            "data_window_start": metrics[-1].recorded_at.isoformat() + "Z",
+            "data_window_end": metrics[0].recorded_at.isoformat() + "Z",
+            "confidence": round(min(1.0, len(metrics) / 20), 2),
         }
 
 prediction_service = PredictionService()
