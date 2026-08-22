@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-brand-darkest text-slate-100 min-h-screen overflow-x-hidden;
+  }
+}
+
+.glass-card {
+  @apply bg-brand-dark border border-brand-border/70 rounded-lg shadow-sm transition-colors duration-200;
+}
+
+.glass-card:hover {
+  @apply border-slate-500;
+}
+
+/* Custom terminal-style scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-brand-darkest;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-brand-border rounded;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-brand-primary/80;
+}

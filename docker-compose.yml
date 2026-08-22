@@ -1,0 +1,70 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: aegisops-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: aegisops
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: aegisops-redis
+    restart: always
+    ports:
+      - "6379:6379"
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: resilio-backend
+    restart: always
+    ports:
+      - "8100:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@db:5432/aegisops
+      - REDIS_URL=redis://redis:6379
+      - PROMETHEUS_URL=${PROMETHEUS_URL:-http://demo-prometheus:9090}
+      - FAILURE_INJECTOR_URL=${FAILURE_INJECTOR_URL:-http://demo-failure-injector:8002}
+      - DEMO_API_URL=${DEMO_API_URL:-http://demo-api:8000}
+      - DEMO_WORKER_URL=${DEMO_WORKER_URL:-http://demo-worker:8001}
+      - TELEMETRY_MODE=${TELEMETRY_MODE:-real}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - DEMO_MODE=${DEMO_MODE:-false}
+      - ANOMALY_CONTAMINATION=${ANOMALY_CONTAMINATION:-0.05}
+      - POLL_INTERVAL_SECONDS=${POLL_INTERVAL_SECONDS:-30}
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - .:/app
+    networks:
+      - default
+      - resilio-monitoring
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: resilio-frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
+
+networks:
+  # Created by demo-env.  It lets the collector reach the actual demo
+  # Prometheus API without exposing a second monitoring stack.
+  resilio-monitoring:
+    external: true
+    name: resilio-monitoring
